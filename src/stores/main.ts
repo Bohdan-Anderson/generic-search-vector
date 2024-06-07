@@ -1,20 +1,13 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import getVector from "../utils/transformers";
-import { queryItems, normalize } from "../utils/search";
+import { queryItems } from "../utils/search";
 import { Entry } from "../types";
+import { addListener, sendTextToWorker } from "../workers/interface";
+import type { WorkerMessage } from "../workers/interface";
 
-const chunkText = (text: string, size: number, overlap: number) => {
-  const chunks = [];
-  const split = text.replace("\n", " ").split(" ");
-
-  for (let i = 0; i < split.length; i += size) {
-    const start = Math.max(0, i - overlap);
-    const end = Math.min(split.length, i + size + overlap);
-    const chunk = split.slice(start, end);
-    chunks.push(chunk);
-  }
-  return chunks;
+type CurrentWorkers = {
+  [key: string]: number;
 };
 
 export const useMainStore = defineStore("main", () => {
@@ -22,6 +15,17 @@ export const useMainStore = defineStore("main", () => {
   const loading = ref("");
   const searching = ref(false);
   const results = ref([] as { item: Entry; score: number }[]);
+  const workers = ref({} as CurrentWorkers);
+
+  const addToDB = (data: WorkerMessage) => {
+    if (data.entries) {
+      db.value.push(...data.entries);
+    }
+    workers.value[data.taskId] = data.percentage;
+    if (data.percentage === 100) delete workers.value[data.taskId];
+  };
+
+  addListener(addToDB);
 
   const loadText = async ({
     file,
@@ -36,24 +40,12 @@ export const useMainStore = defineStore("main", () => {
     /** overlap of words */
     overlap?: number;
   }) => {
-    loading.value = "starting...";
-    const chunks = chunkText(text, size, overlap);
-    const date = new Date();
-    const vectors = [] as Entry[];
-    for (let i = 0; i < chunks.length; i++) {
-      loading.value = Math.floor((i / chunks.length) * 100) + "%";
-      const chunk = chunks[i];
-      const vector = await getVector(chunk.join(" "));
-      vectors.push({
-        file,
-        text: chunk.join(" "),
-        vectors: vector,
-        date,
-        norm: normalize(vector),
-      });
-    }
-    db.value.push(...vectors);
-    loading.value = "";
+    sendTextToWorker({
+      file,
+      text,
+      size,
+      overlap,
+    });
   };
 
   const setDB = async (backup: Entry[]) => {
@@ -73,6 +65,7 @@ export const useMainStore = defineStore("main", () => {
     loading,
     searching,
     results,
+    workers,
     setDB,
     loadText,
     search,

@@ -31,20 +31,12 @@ const onFileUpload = (e: Event) => {
 </script>
 <template>
   <div>
-    <h2>upload pdf</h2>
+    <h2>Upload PDF</h2>
     <template v-if="loading">
       <p>Loading...</p>
     </template>
     <template v-else>
       <input type="file" @change="onFileUpload" />
-      <ul>
-        <li
-          v-for="(text, index) in mainStore.db.map((x) => x.text)"
-          :key="index"
-        >
-          {{ text }}
-        </li>
-      </ul>
     </template>
   </div>
 </template>

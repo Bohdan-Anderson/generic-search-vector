@@ -29,10 +29,13 @@ const loadData = (e: Event) => {
 
 <template>
   <div>
-    <h1>Export/Load</h1>
+    <h2>Export/Load</h2>
     <p>Export your data to a text file or load data from a text file.</p>
-    <button @click="exportData">Export</button>
-    <input type="file" @change="loadData" />
+    <label for="id_import">Load File:</label>
+    <br />
+    <input id="id_import" type="file" @change="loadData" />
+    <br />
+    <button @click="exportData">Save to file</button>
   </div>
 </template>
 
