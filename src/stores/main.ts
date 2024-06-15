@@ -2,8 +2,17 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { queryItems } from "../utils/search";
 import { Entry } from "../types";
-import { addListener, getEmbed, sendTextToWorker } from "../workers/interface";
-import type { WorkerMessage } from "../workers/interface";
+import * as embed from "../workers/interfaceEmbed";
+import * as summarize from "../workers/interfaceSummarize";
+// {
+//   addListener,
+//   getEmbed,
+//   sendTextToWorker,
+//   removeListener,
+//   checkIfLoaded,
+// }
+import type { WorkerMessage } from "../workers/interfaceEmbed";
+import type { SummarizeMessage } from "../workers/interfaceSummarize";
 
 type CurrentWorkers = {
   [key: string]: number;
@@ -16,7 +25,10 @@ export const useMainStore = defineStore("main", () => {
   const results = ref(
     [] as { item: Entry; score: number; contextText: string[] }[]
   );
+  const summarized = ref("");
   const workers = ref({} as CurrentWorkers);
+  const loadingEmbeddingModel = ref(true);
+  const loadingSummarizeModel = ref(true);
 
   const addToDB = (data: WorkerMessage) => {
     if (data.type === "add" && data.entries) {
@@ -26,7 +38,42 @@ export const useMainStore = defineStore("main", () => {
     if (data.percentage === 100) delete workers.value[data.taskId];
   };
 
-  addListener(addToDB);
+  const embeddingOnload = (data: WorkerMessage) => {
+    if (data.type === "loaded") {
+      loadingEmbeddingModel.value = false;
+      embed.removeListener(embeddingOnload);
+    }
+  };
+
+  const summarizeOnload = (data: SummarizeMessage) => {
+    if (data.type === "loaded") {
+      loadingSummarizeModel.value = false;
+      summarize.removeListener(summarizeOnload);
+      delete workers.value[data.taskId];
+    }
+  };
+  const summarizeOnUpdate = (data: SummarizeMessage) => {
+    if (data.type === "update") {
+      workers.value[data.taskId] = data.percentage;
+      if (data.percentage === 100) delete workers.value[data.taskId];
+    }
+  };
+
+  const summarizedResults = (data: SummarizeMessage) => {
+    console.log(data);
+    if (data.type === "summarize") {
+      summarized.value = data.text;
+    }
+  };
+
+  embed.addListener(addToDB);
+  embed.addListener(embeddingOnload);
+  embed.checkIfLoaded();
+
+  summarize.addListener(summarizedResults);
+  summarize.addListener(summarizeOnUpdate);
+  summarize.addListener(summarizeOnload);
+  summarize.checkIfLoaded();
 
   const loadText = async ({
     file,
@@ -41,7 +88,7 @@ export const useMainStore = defineStore("main", () => {
     /** overlap of words */
     overlap?: number;
   }) => {
-    sendTextToWorker({
+    embed.sendTextToWorker({
       file,
       text,
       size,
@@ -55,8 +102,11 @@ export const useMainStore = defineStore("main", () => {
 
   const search = async (query: string) => {
     searching.value = true;
-    const queryVector = await getEmbed(query);
+    summarized.value = "";
+    const queryVector = await embed.getEmbed(query);
     results.value = await queryItems(db.value, queryVector, 5);
+    summarize.getSummarize(results.value.map((x) => x.item.text).join(" "));
+
     searching.value = false;
     return true;
   };
@@ -66,7 +116,9 @@ export const useMainStore = defineStore("main", () => {
     loading,
     searching,
     results,
+    summarized,
     workers,
+    loadingEmbeddingModel,
     setDB,
     loadText,
     search,

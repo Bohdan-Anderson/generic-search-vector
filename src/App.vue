@@ -4,7 +4,7 @@ import LoadText from "./components/loadText.vue";
 import ExportLoad from "./components/ExportLoad.vue";
 import Search from "./components/Search.vue";
 import LoadPDF from "./components/loadPDF.vue";
-import TextSnippet from "./components/TextSnippet.vue";
+import Data from "./components/Data.vue";
 import { useMainStore } from "./stores/main";
 
 const mainStore = useMainStore();
@@ -61,7 +61,10 @@ const currentTab = ref<"upload" | "search" | "data">("upload");
         Search
       </button>
     </nav>
-    <div class="tabs">
+    <div v-if="mainStore.loadingEmbeddingModel">
+      <p>Loading embedding model</p>
+    </div>
+    <div class="tabs" v-else>
       <div class="load" v-if="currentTab === 'upload'">
         <p>
           Upload your data, once you have - save it for future use (if needed)
@@ -72,15 +75,7 @@ const currentTab = ref<"upload" | "search" | "data">("upload");
         <ExportLoad />
       </div>
       <div v-else-if="currentTab === 'data'">
-        <h1>Data</h1>
-        <div class="data-entries" v-if="mainStore.db.length">
-          <TextSnippet
-            v-for="(item, index) in mainStore.db"
-            :key="index"
-            :entry="item"
-          />
-        </div>
-        <p v-else>No data</p>
+        <Data />
       </div>
       <div v-else-if="currentTab === 'search'">
         <Search />
@@ -116,11 +111,5 @@ nav {
   border: solid 1px #ddd;
   padding: 10px;
   border-radius: 10px;
-}
-
-.data-entries {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 </style>

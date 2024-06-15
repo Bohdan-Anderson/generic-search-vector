@@ -4,12 +4,16 @@ import { useMainStore } from "../stores/main";
 import Card from "./ui/Card.vue";
 import CardWrapper from "./ui/CardWrapper.vue";
 
+// import { summarizeText } from "../workers/summarize";
+
 const mainStore = useMainStore();
 const search = ref("");
 const searching = ref<null | boolean>(null);
+const summary = ref("");
 
 const handleSearch = (e: any) => {
   e.preventDefault();
+  summary.value = "";
   searching.value = true;
   mainStore.search(search.value).then(() => {
     searching.value = false;
@@ -24,9 +28,15 @@ const handleSearch = (e: any) => {
       <input type="text" v-model="search" />
       <button @click="handleSearch">Search</button>
     </form>
+    <p v-if="mainStore.summarized">
+      {{ mainStore.summarized }}
+    </p>
     <div v-if="searching">Searching...</div>
     <div v-if="searching === false && mainStore.results.length === 0">
       No results
+    </div>
+    <div v-if="summary">
+      <p>{{ summary }}</p>
     </div>
     <CardWrapper>
       <Card
