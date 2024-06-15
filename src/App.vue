@@ -4,6 +4,7 @@ import LoadText from "./components/loadText.vue";
 import ExportLoad from "./components/ExportLoad.vue";
 import Search from "./components/Search.vue";
 import LoadPDF from "./components/loadPDF.vue";
+import YoutubeTranscript from "./components/YoutubeTranscript.vue";
 import Data from "./components/Data.vue";
 import { useMainStore } from "./stores/main";
 
@@ -73,6 +74,7 @@ const currentTab = ref<"upload" | "search" | "data">("upload");
         <LoadText />
         <LoadPDF />
         <ExportLoad />
+        <YoutubeTranscript />
       </div>
       <div v-else-if="currentTab === 'data'">
         <Data />

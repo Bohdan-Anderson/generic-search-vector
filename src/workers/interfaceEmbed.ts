@@ -53,7 +53,6 @@ export const getEmbed = async (text: string): Promise<number[]> => {
   return await new Promise((resolve) => {
     const listener = (data: WorkerMessage) => {
       if (data.type === "embed") {
-        console.log(`received vector ${data.text}`, data.vector[0]);
         removeListener(listener);
         resolve(data.vector);
       }

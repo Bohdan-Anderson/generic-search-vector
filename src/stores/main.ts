@@ -60,7 +60,6 @@ export const useMainStore = defineStore("main", () => {
   };
 
   const summarizedResults = (data: SummarizeMessage) => {
-    console.log(data);
     if (data.type === "summarize") {
       summarized.value = data.text;
     }
