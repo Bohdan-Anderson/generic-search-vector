@@ -4,6 +4,7 @@ import LoadText from "./components/loadText.vue";
 import ExportLoad from "./components/ExportLoad.vue";
 import Search from "./components/Search.vue";
 import LoadPDF from "./components/loadPDF.vue";
+import TextSnippet from "./components/TextSnippet.vue";
 import { useMainStore } from "./stores/main";
 
 const mainStore = useMainStore();
@@ -28,13 +29,15 @@ const currentTab = ref<"upload" | "search" | "data">("upload");
   <div v-if="!mainStore.loading">
     <h1>Local vector search</h1>
     <p>
-      Upload pdf/text/previous datasets and search through them with a vector
-      search
+      This is a simple example of using embeddings and vector search to query a
+      dataset. All data is stored locally in your browser, embedding is done in
+      browser and nothing is sent to a server.
     </p>
-    <p>
-      This project enables local search of large documents using a fuzzy search,
-      which is great if you're not example sure what you are looking for.
-    </p>
+    <ol>
+      <li>Upload your text/PDF/previous dataset</li>
+      <li>Save the data (for future use)</li>
+      <li>Switch to the search tab and query your data</li>
+    </ol>
     <nav class="">
       <button
         @click="currentTab = 'upload'"
@@ -70,12 +73,13 @@ const currentTab = ref<"upload" | "search" | "data">("upload");
       </div>
       <div v-else-if="currentTab === 'data'">
         <h1>Data</h1>
-        <ul v-if="mainStore.db.length">
-          <li v-for="(item, index) in mainStore.db" :key="index">
-            {{ item.text }}
-            <small v-if="item.file">-- {{ item.file }}</small>
-          </li>
-        </ul>
+        <div class="data-entries" v-if="mainStore.db.length">
+          <TextSnippet
+            v-for="(item, index) in mainStore.db"
+            :key="index"
+            :entry="item"
+          />
+        </div>
         <p v-else>No data</p>
       </div>
       <div v-else-if="currentTab === 'search'">
@@ -112,5 +116,11 @@ nav {
   border: solid 1px #ddd;
   padding: 10px;
   border-radius: 10px;
+}
+
+.data-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 </style>

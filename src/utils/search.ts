@@ -102,6 +102,9 @@ export const queryItems = async (
   const top = distances.slice(0, topK).map((d) => {
     return {
       item: Object.assign({}, items[d.index]) as Entry,
+      contextText: items
+        .slice(Math.max(0, d.index - 1), d.index + 2)
+        .map((i) => i.text),
       score: d.distance,
     };
   });

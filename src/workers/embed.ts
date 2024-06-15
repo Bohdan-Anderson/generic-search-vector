@@ -21,6 +21,7 @@ self.addEventListener(
   "message",
   async (e: {
     data: {
+      type: string;
       text: string;
       file: string;
       size: number;
@@ -28,31 +29,55 @@ self.addEventListener(
     };
   }) => {
     const taskId = createRandomId();
-    const { text, file, size, overlap } = e.data;
-    const chunks = chunkText(text, size, overlap);
-    const date = new Date();
-    const vectors = [] as Entry[];
-    for (let i = 0; i < chunks.length; i++) {
-      self.postMessage({
-        taskId,
-        type: "update",
-        percentage: Math.floor((i / chunks.length) * 100),
-      });
-      const chunk = chunks[i];
-      const vector = await getVector(chunk.join(" "));
-      vectors.push({
-        file,
-        text: chunk.join(" "),
-        vectors: vector,
-        date,
-        norm: normalize(vector),
-      });
+    switch (e.data.type) {
+      // for adding data into the DB we chunk and embed all the text
+      case "add":
+        const { text, file, size, overlap } = e.data;
+        const chunks = chunkText(text, size, overlap);
+        const date = new Date();
+        const vectors = [] as Entry[];
+        for (let i = 0; i < chunks.length; i++) {
+          self.postMessage({
+            taskId,
+            type: "update",
+            percentage: Math.floor((i / chunks.length) * 100),
+          });
+          const chunk = chunks[i];
+          const vector = await getVector(chunk.join(" "));
+          vectors.push({
+            file,
+            text: chunk.join(" "),
+            vectors: vector,
+            date,
+            norm: normalize(vector),
+          });
+        }
+        self.postMessage({
+          taskId,
+          entries: vectors,
+          type: "add",
+          percentage: 100,
+        });
+        break;
+
+      // used in search, to embed the query
+      case "embed":
+        self.postMessage({
+          taskId,
+          type: "update",
+          percentage: 0,
+        });
+        const vector = await getVector(e.data.text);
+        self.postMessage({
+          taskId,
+          text: e.data.text,
+          vector: vector,
+          type: "embed",
+          percentage: 100,
+        });
+        break;
+      default:
+        break;
     }
-    self.postMessage({
-      taskId,
-      entries: vectors,
-      type: "add",
-      percentage: 100,
-    });
   }
 );

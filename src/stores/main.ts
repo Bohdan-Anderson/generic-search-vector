@@ -1,9 +1,8 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import getVector from "../utils/transformers";
 import { queryItems } from "../utils/search";
 import { Entry } from "../types";
-import { addListener, sendTextToWorker } from "../workers/interface";
+import { addListener, getEmbed, sendTextToWorker } from "../workers/interface";
 import type { WorkerMessage } from "../workers/interface";
 
 type CurrentWorkers = {
@@ -14,11 +13,13 @@ export const useMainStore = defineStore("main", () => {
   const db = ref([] as Entry[]);
   const loading = ref("");
   const searching = ref(false);
-  const results = ref([] as { item: Entry; score: number }[]);
+  const results = ref(
+    [] as { item: Entry; score: number; contextText: string[] }[]
+  );
   const workers = ref({} as CurrentWorkers);
 
   const addToDB = (data: WorkerMessage) => {
-    if (data.entries) {
+    if (data.type === "add" && data.entries) {
       db.value.push(...data.entries);
     }
     workers.value[data.taskId] = data.percentage;
@@ -30,8 +31,8 @@ export const useMainStore = defineStore("main", () => {
   const loadText = async ({
     file,
     text,
-    size = 40,
-    overlap = 10,
+    size = 80,
+    overlap = 20,
   }: {
     file: string;
     text: string;
@@ -54,7 +55,7 @@ export const useMainStore = defineStore("main", () => {
 
   const search = async (query: string) => {
     searching.value = true;
-    const queryVector = await getVector(query);
+    const queryVector = await getEmbed(query);
     results.value = await queryItems(db.value, queryVector, 5);
     searching.value = false;
     return true;

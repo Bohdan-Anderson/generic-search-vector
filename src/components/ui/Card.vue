@@ -2,9 +2,15 @@
 
 <template>
   <div class="card">
-    <h2 v-if="$slots.title">
-      <slot name="title"></slot>
-    </h2>
+    <div class="titles" v-if="$slots.title || $slots.subtitle">
+      <h2 v-if="$slots.title">
+        <slot name="title"></slot>
+      </h2>
+      <h3 v-if="$slots.subtitle">
+        <slot name="subtitle"></slot>
+      </h3>
+    </div>
+
     <div>
       <slot></slot>
     </div>
@@ -28,5 +34,14 @@
   font-weight: 500;
   color: #333;
   text-align: center;
+}
+.card h2:deep small {
+  display: none;
+}
+.titles {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
 }
 </style>
